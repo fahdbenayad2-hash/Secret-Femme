@@ -1,4 +1,8 @@
 ﻿function doPost(e) {
+  return handleOrder(e);
+}
+
+function handleOrder(e) {
   try {
     const data = typeof e.parameter.payload === 'string'
       ? JSON.parse(e.parameter.payload)
@@ -65,7 +69,11 @@
   }
 }
 
-function doGet() {
+function doGet(e) {
+  // Handle both GET (no-cors fallback) and POST
+  if (e && e.parameter && e.parameter.payload) {
+    return handleOrder(e);
+  }
   return ContentService.createTextOutput(JSON.stringify({status:'alive'}))
     .setMimeType(ContentService.MimeType.JSON);
 }
