@@ -1,0 +1,71 @@
+﻿function doPost(e) {
+  try {
+    const data = typeof e.parameter.payload === 'string'
+      ? JSON.parse(e.parameter.payload)
+      : e.parameter;
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('Orders') || ss.getActiveSheet();
+
+    if (sheet.getLastRow() === 0) {
+      const headers = ['التاريخ','الاسم','الهاتف','الولاية','البلدية','العنوان',
+        'الملاحظات','المنتج','اللون','المقاس','السعر',
+        'utm_source','utm_medium','utm_campaign','utm_content','utm_term',
+        'URL','الحالة'];
+      sheet.appendRow(headers);
+      sheet.getRange(1,1,1,headers.length).setFontWeight('bold').setBackground('#C2185B').setFontColor('#FFFFFF');
+      sheet.setFrozenRows(1);
+    }
+
+    sheet.appendRow([
+      new Date().toLocaleString('ar-DZ',{timeZone:'Africa/Algiers'}),
+      data.name||'', data.phone||'', data.wilaya||'', data.commune||'',
+      data.address||'', data.notes||'', data.product||'', data.color||'',
+      data.size||'', data.price||'',
+      data.utm_source||'direct', data.utm_medium||'', data.utm_campaign||'',
+      data.utm_content||'', data.utm_term||'',
+      data.page_url||'', 'جديد ✅'
+    ]);
+
+    // Send email notification if notify_email is provided
+    if (data.notify_email) {
+      const emailBody = [
+        'طلب جديد من صفحة Secret Femme',
+        '------------------------------',
+        'الاسم: ' + (data.name || ''),
+        'الهاتف: ' + (data.phone || ''),
+        'الولاية: ' + (data.wilaya || ''),
+        'البلدية: ' + (data.commune || ''),
+        'العنوان: ' + (data.address || ''),
+        'المنتج: ' + (data.product || ''),
+        'اللون: ' + (data.color || ''),
+        'المقاس: ' + (data.size || ''),
+        'السعر: ' + (data.price || '') + ' د.ج',
+        'ملاحظات: ' + (data.notes || 'لا يوجد'),
+        '------------------------------',
+        'UTM Source: ' + (data.utm_source || 'direct'),
+        'UTM Medium: ' + (data.utm_medium || ''),
+        'UTM Campaign: ' + (data.utm_campaign || ''),
+        'الصفحة: ' + (data.page_url || ''),
+        'التاريخ: ' + new Date().toLocaleString('ar-DZ',{timeZone:'Africa/Algiers'})
+      ].join('\n');
+
+      MailApp.sendEmail({
+        to: data.notify_email,
+        subject: '🛒 طلب جديد - Secret Femme - ' + (data.name || '') + ' - ' + (data.phone || ''),
+        body: emailBody
+      });
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({status:'success'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status:'error', message: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet() {
+  return ContentService.createTextOutput(JSON.stringify({status:'alive'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
